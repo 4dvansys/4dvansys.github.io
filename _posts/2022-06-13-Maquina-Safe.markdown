@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Maquina Safe
-date: 2022-13-06
+date: 2022-06-13 13:32:20 +0300
 description: Write up de la maquina de hack the box Safe # Add post description (optional)
 img: /Safe/safe.png # Add image post (optional)
 fig-caption: # Add figcaption (optional)
