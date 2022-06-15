@@ -1,12 +1,11 @@
-
 ---
 layout: post
-title: Maquina Safe Htb
-date: 2022-05-14 13:32:20 +0300
-description: Este es un writeup de la maquina de Hack the Box safe, clasificada como fácil, en la que tocaremos básicamente técnicas de análisis de binarios, desarrollo de buffer overflow y creación de exploits en python. # Add post description (optional)
-img: /assets/img/Safe/safe.png Add image post (optional)
+title: Maquina Safe
+date: 2022-05-14 18:32:20 +0300
+description: Máquina Safe de Hack the Box # Add post description (optional)
+img: safe.jpg # Add image post (optional)
 fig-caption: # Add figcaption (optional)
-tags: [Easy, Hack the Box, overflow, binarios]
+tags: [safe, overflow, binaries]
 ---
 
   Este es un writeup de la maquina de Hack the Box safe, clasificada
