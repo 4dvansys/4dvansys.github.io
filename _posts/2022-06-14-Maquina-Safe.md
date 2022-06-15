@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Maquina Safe
-date: 2022-06-14 18:32:20 +0300
+date: 2022-06-14 18:50:20 +0200
 description: Máquina Safe de Hack the Box # Add post description (optional)
 img: safe.jpg # Add image post (optional)
 fig-caption: # Add figcaption (optional)
