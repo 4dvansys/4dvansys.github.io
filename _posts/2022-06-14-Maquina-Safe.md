@@ -13,7 +13,6 @@ tags: [safe, overflow, binaries]
   binarios, desarrollo de buffer overflow y creación de exploits en
   python.
 
-![image]({{site.baseurl}}/assets/img/Safe/safe.png)
 
 ************************
 # Enumeración
