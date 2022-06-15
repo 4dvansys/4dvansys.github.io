@@ -3,7 +3,7 @@ layout: post
 title: Maquina Safe
 date: 2022-06-14 18:32:20 +0300
 description: Máquina Safe de Hack the Box # Add post description (optional)
-img: safe.jpg # Add image post (optional)
+img: Safe/safe.jpg # Add image post (optional)
 fig-caption: # Add figcaption (optional)
 tags: [safe, overflow, binaries]
 ---
