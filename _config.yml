@@ -29,6 +29,7 @@ plugins:
   - jekyll-paginate
   - jemoji
 
+input: GFM
 paginate: 8
 paginate_path: "/page/:num"
 
