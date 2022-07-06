@@ -76,7 +76,7 @@ después de mucho buscar vemos que tenemos ForceChangePassword con el usuario au
 ![bloodhound]({{site.baseurl}}/assets/img/Blackfield/blood.png)
 
 ¡Podemos cambiarle la contraseña!, vamos a ver como hacerlo: [https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Active%20Directory%20Attack.md#forcechangepassword](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Active%20Directory%20Attack.md#forcechangepassword)
-podemos hacerlo con rpc ya que tenemos un usuario valido vamso a ello:
+podemos hacerlo con rpc ya que tenemos un usuario valido vamos a ello:
 >net rpc password Audit2020 -U 'support' -S 10.10.10.192
 
 nos pide la nueva contraseña para audit2020, yo voy a poner password123$  y la contraseña del usuario support y listo, contraseña cambiada.
