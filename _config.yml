@@ -1,15 +1,8 @@
 title: Write up Hack the Box
-description: > # this means to ignore newlines until "baseurl:"
-  
-permalink: ':title/'
-<<<<<<< HEAD
-baseurl: "" # the subpath of your site, e.g. /blog
+description: > # this means to ignore newlines until "baseurl:" 
 url: "http://4dvansys.github.io" # the base hostname & protocol for your site, e.g. http://example.com
-=======
 baseurl:  # the subpath of your site, e.g. /blog
-url:  "https://4dvansys.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 site-twitter: #if your site has a twitter account, enter it here
-
 # Author Settings
 author: Advansys # add your name
 author-img: misterX.png # add your photo
