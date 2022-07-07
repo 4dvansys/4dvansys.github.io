@@ -42,8 +42,18 @@ description: > # this means to ignore newlines until "baseurl:"
   line in _config.yml. It will appear in your document head meta (for
   Google search results) and in your feed.xml site description.
 permalink: ':title/'
+<<<<<<< HEAD
 baseurl:  # the subpath of your site, e.g. /blog
 url:  "https://4dvansys.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+=======
+<<<<<<< HEAD
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "http://4dvansys.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+=======
+baseurl:  # the subpath of your site, e.g. /blog
+url:  "https://4dvansys.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+>>>>>>> bd8fe7c2a023a6631075fd89a2b3ffa3f4fe9d6c
+>>>>>>> 31dffbfe425792e475a5c07468fd6079c6d53b08
 site-twitter: #if your site has a twitter account, enter it here
 
 # Author Settings
