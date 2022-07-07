@@ -9,7 +9,7 @@ site-twitter: #if your site has a twitter account, enter it here
 # Author Settings
 author: Advansys # add your name
 author-img: misterX.png # add your photo
-about-author: Hola, soy Advansys un entusiasta de la ciberseguridad y el hacking # add description
+about-author: Hola, soy Advansys un entusiasta de la ciberseguridad y el hacking, he creado esta página para practicar un poco y compartir los writeups en castellano. # add description
 social-twitter: # add your Twitter handle
 social-facebook: # add your Facebook handle
 social-github:  # add your Github handle

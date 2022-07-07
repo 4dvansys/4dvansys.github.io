@@ -1,0 +1,164 @@
+I"� <p>Hola, hoy vamos a tocar una máquina Windows de dificultad Hard en Hack the Box, explotáremos active directory y SeBackupPrivilege.</p>
+
+<hr />
+
+<h1 id="enumeración">Enumeración</h1>
+
+<p>En primer lugar realizamos una enumeración de la maquina con nmap y
+descubrimos los siguientes puertos:</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-04_201701.png" alt="Nmap" /></p>
+
+<p>Lanzamos crackmapexec y por un lado comprobamos el build de Windows 17763 (buscamos en Microsoft.com y vemos que pertenece a Windows server 2019)
+y por otro vemos que el dominio es blackfield.local. Este ultimo lo metemos al etc/hosts.</p>
+
+<p><img src="/assets/img//Blackfield/2022-07-04_201727.png" alt="crackmapexec" /></p>
+
+<p>Tiene el puerto de smb abierto, vamos a ver si hay algo expuesto:</p>
+<blockquote>
+  <p>smbmap -H 10.10.10.192 -u ‘null’</p>
+</blockquote>
+
+<p>y si, tiene información expuesta.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-04_201844.png" alt="smbmap" /></p>
+
+<p>Vemos unas cuantas cosas, después de enumerarlas vemos algo que nos llama la atención en la carpeta profiles$, unos cuantos nombres que pueden ser potenciales usuarios. Vamos a crear un diccionario con ellos.
+<strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong>**
+#Active Directory</p>
+
+<p>Metemos todo el contenido de la carpeta profiles$ en un archivo que llamaremos users.txt</p>
+
+<blockquote>
+  <p>smbmap -H 10.10.10.192 -u ‘null’ -r ‘profiles$’ &gt; users.txt | awk ‘NF{print$NF}</p>
+</blockquote>
+
+<p>(el awk es para quedarnos con la ultima columna)</p>
+
+<p>Arreglamos las primeras líneas con nano o vim ( o con el editor que queramos ;)) y ya tenemos nuestro archivo de usuarios,<br />
+Bien, ya tenemos un listado potencial de usuarios, vamos a ver si hay algún usuario valido.(Información sobre kerbrute <a href="https://infinitelogins.com/2020/11/16/enumerating-valid-active-directory-usernames-with-kerbrute/">aquí</a>)</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-04_204307.png" alt="Kerbrute" /></p>
+
+<p>vemos algunos usuarios validos, los metemos en otra lista valid_users.txt para ver si podemos hacer un Asreproast attack.
+Información sobre asreproast <a href="https://www.hackplayers.com/2020/11/asreproast-o-as-rep-roasting.html">aquí</a> y <a href="https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/asreproast">aquí</a></p>
+
+<p>Lanzamos GetNPUsers.py y bingo nos devuelve el hash de support</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-04_204842.png" alt="Asreproast" /></p>
+
+<p>Copiamos el hash en un archivo y lo intentamos crackear con Johntheripper.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-04_205010.png" alt="John" /></p>
+
+<p>Bien, la contraseña esta en el rockyou y la hemos conseguido sin problema. Validamos la cuenta con crackmapexec y vemos que no tiene permisos de winrm.
+Con ldapdomaindump, rpcclient, enum4linux etc.. podemos enumerar mas usuarios para ver cual es administrador o tiene permisos de winrm, pero de momento no podemos hacer mucho mas.</p>
+
+<p>Vamos a seguir enumerando con bloodhound a ver si podemos hacer algo.
+<strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong>*
+#BloodHound</p>
+
+<p>Como tenemos usuario y contraseña vamos a usar <a href="https://github.com/fox-it/BloodHound.py">bloodhound-python</a> con esta herramienta podemos hacer una enumeración de forma remota para luego verla en bloodhound.</p>
+
+<blockquote>
+  <p>bloodhound-python -c all -u ‘support’ -p ‘#00^BlacKnight’ -ns 10.10.10.192 -d blackfield.local</p>
+</blockquote>
+
+<p>Una vez que tengamos la información la importamos en bloodhound y pasamos a analizarla.
+después de mucho buscar vemos que tenemos ForceChangePassword con el usuario audit2020</p>
+
+<p><img src="/assets/img/Blackfield/blood.png" alt="bloodhound" /></p>
+
+<p>¡Podemos cambiarle la contraseña!, vamos a ver como hacerlo: <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Active%20Directory%20Attack.md#forcechangepassword">https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Active%20Directory%20Attack.md#forcechangepassword</a>
+podemos hacerlo con rpc ya que tenemos un usuario valido vamos a ello:</p>
+<blockquote>
+  <p>net rpc password Audit2020 -U ‘support’ -S 10.10.10.192</p>
+</blockquote>
+
+<p>nos pide la nueva contraseña para audit2020, yo voy a poner password123$  y la contraseña del usuario support y listo, contraseña cambiada.</p>
+
+<p>Volvemos a validar con crackmapexec y seguimos sin tener winrm, vamos a ver si en smb nos deja ver algo mas.. Y si, no deja ver la carpeta forensic, dentro de ella hay otra memory_analysis, esto tiene buena pinta.
+Vemos que tiene un archivo <a href="https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc961760(v=technet.10)?redirectedfrom=MSDN">lsass</a></p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_173104.png" alt="smb" /></p>
+
+<p>Nos lo traemos a nuestra maquina:</p>
+<blockquote>
+  <p>smbmap -H 10.10.10.192 -u ‘audit2020’ -p’password123$’ –download forensic/memory_analysis/lsass.zip</p>
+</blockquote>
+
+<p>lo descomprimimos y vemos un archivo lsass.DMP, pinta bien. Usamos pypykatz para ver el dumpeo.</p>
+
+<blockquote>
+  <p>pypykatz lsa minidump lsass.dmp</p>
+</blockquote>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_173702.png" alt="pypykatz" /></p>
+
+<p>vemos que tenemos el hash nt del usuario svc_backup y el hash nt podemos usarlo para hacer passthehash. Lo validamos y vemos que tenemos acceso winrm, por fin estamos dentro.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_174000.png" alt="evilwinrm" /></p>
+
+<p>ya podemos ver la flag de usuario.
+<strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong><strong>**</strong><em>**</em>
+#Escalada</p>
+
+<p>Necesitamos escalar privilegios para eso vamos a que privilegios tenemos y que podemos explotar.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_174603.png" alt="priv" /></p>
+
+<p>Como somos el usuario backup tenemos el privilegio <a href="https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/">SeBackupPrivilege</a>, podemos usarlo para escalar a Administrador.</p>
+
+<p>Como lo que nos interesa es ser administrador del controlador de dominio vamos a intentar hacer una copia del ntds.dit. primero en nuestra maquina creamos un archivo  txt por ejemplo disk.txt</p>
+
+<blockquote>
+  <p>nano disk.txt</p>
+</blockquote>
+
+<p>que contenga lo siguiente:</p>
+
+<blockquote>
+  <p>set context persistent nowriters</p>
+</blockquote>
+
+<blockquote>
+  <p>add volume c: alias nombre</p>
+</blockquote>
+
+<blockquote>
+  <p>create</p>
+</blockquote>
+
+<blockquote>
+  <p>expose %nombre% k:</p>
+</blockquote>
+
+<p>Es muy importante que después de cada sentencia le metas un espacio al final ya que si no borrara la ultima letra.</p>
+
+<p>Una vez que lo tengas lo subes a un directorio temp( desde evil winrm es muy fácil, con upload) y ejecutamos diskshadow.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_190600.png" alt="Diskshadow" /></p>
+
+<p>Nos vamos a la unidad z: o k: o donde lo tengáis copiado y probamos a copiarlo con copy, si no podemos usaremos robocopy:</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_190902.png" alt="robocopy" /></p>
+
+<p>Ahora hacemos copia de la <a href="https://www.techtarget.com/searchenterprisedesktop/definition/Security-Accounts-Manager">sam</a></p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_191454.png" alt="sam" /></p>
+
+<p>Ya lo tenemos todo, lo pasamos a nuestra maquina y con el <a href="https://github.com/SecureAuthCorp/impacket/blob/master/examples/secretsdump.py">impacket-secretsdump</a> lo enumeramos.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_192201.png" alt="impacket" /></p>
+
+<p>ya podemos los ver los hashes y entre ellos el de administrador ;) Solo nos queda hacer passthehash con evil-winrm y listo.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_192243.png" alt="pass" /></p>
+
+<p>!Ya somos Admin! ya podemos ir a por la flag de root.</p>
+
+<p><img src="/assets/img/Blackfield/2022-07-05_192323.png" alt="root" /></p>
+
+<p>Eso es todo, una máquina muy divertida y útil para practicar Active directory.</p>
+
+:ET

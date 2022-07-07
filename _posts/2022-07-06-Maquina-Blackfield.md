@@ -8,7 +8,7 @@ fig-caption:
 tags: [blackfield, windows, active directory, asreproast, kerbrute, backup exploit]
 ---
 
-  Hola, hoy vamos a tocar una máquina Windows de dificultad Hard en Hack the Box, explotarémos active directory y SeBackupPrivilege.
+  Hola, hoy vamos a tocar una máquina Windows de dificultad Hard en Hack the Box, explotáremos active directory y SeBackupPrivilege.
 
 **********************
 # Enumeración
@@ -95,7 +95,7 @@ lo descomprimimos y vemos un archivo lsass.DMP, pinta bien. Usamos pypykatz para
 
 ![pypykatz]({{site.baseurl}}/assets/img/Blackfield/2022-07-05_173702.png)
 
-vemos que tenemos el hash nt del usuario svc_backup y el hash nt podemos usarlo para hacer passthehash. Lo validadmos y vemos que tenemos acceso winrm, por fin estamos dentro.
+vemos que tenemos el hash nt del usuario svc_backup y el hash nt podemos usarlo para hacer passthehash. Lo validamos y vemos que tenemos acceso winrm, por fin estamos dentro.
 
 ![evilwinrm]({{site.baseurl}}/assets/img/Blackfield/2022-07-05_174000.png)
 
@@ -109,7 +109,7 @@ Necesitamos escalar privilegios para eso vamos a que privilegios tenemos y que p
 
 Como somos el usuario backup tenemos el privilegio [SeBackupPrivilege](https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/), podemos usarlo para escalar a Administrador.
 
-Como lo que nos interesa es ser administrador del controlador de dominio vamos a intentar hacer una copia del ntds.dit. primero en nuentra maquina creamos un achivo  txt por ejemplo disk.txt
+Como lo que nos interesa es ser administrador del controlador de dominio vamos a intentar hacer una copia del ntds.dit. primero en nuestra maquina creamos un archivo  txt por ejemplo disk.txt
 
 >nano disk.txt
 
@@ -129,7 +129,7 @@ Una vez que lo tengas lo subes a un directorio temp( desde evil winrm es muy fá
 
 ![Diskshadow]({{site.baseurl}}/assets/img/Blackfield/2022-07-05_190600.png)
 
-Nos vamos a la unidad z: o k: o donde lo tengais copiado y probamos a copiarlo con copy, si no podemos usaremos robocopy:
+Nos vamos a la unidad z: o k: o donde lo tengáis copiado y probamos a copiarlo con copy, si no podemos usaremos robocopy:
 
 ![robocopy]({{site.baseurl}}/assets/img/Blackfield/2022-07-05_190902.png)
 

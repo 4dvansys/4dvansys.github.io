@@ -132,7 +132,7 @@ aplicación que nos devuelve date y un eco de lo que nosotros escribamos.
 Una vez descargada la aplicación vamos a analizarla, para ello usaremos
 Ghidra, una herramienta de ingeniería inversa de código abierto y
 gratuita desarrollada por la NSA. Cargamos la aplicación en Ghidra y
-analizamos las funciones, en la funcion main podemos ver el código hecho
+analizamos las funciones, en la función main podemos ver el código hecho
 en C. Vemos que crea un buffer y usa gets y puts para el input de
 usuario. No tiene sanitización y posiblemente sea vulnerable a buffer
 overflow.
@@ -182,7 +182,7 @@ Nos devuelve la dirección de memoria con las llamadas a r13, r14, r15 y ret.
 
 ![Búsqueda de pop r13]({{site.baseurl}}/assets/img/Safe/screensht_22-06-09_20_30_18.png)
 
-Necesitamos la dirección de system para hacer la llamada a la cadena que vamos a guardar en rdi, la podemos conseguir haciendo un objectdump a myapp de la siguente manera:
+Necesitamos la dirección de system para hacer la llamada a la cadena que vamos a guardar en rdi, la podemos conseguir haciendo un objectdump a myapp de la siguiente manera:
 >objdump -D ./myapp | grep system
 
 Eso nos devuelve la dirección de system@plt
@@ -254,7 +254,7 @@ Esta es una pseudo consola, lo  ideal seria poder usar una consola plena, revisa
 
 #Escalada de privilegios
 
-Una vez dentro como user vemos que en el home tenemos un archivo de keepass y unas cuantas imagenes, nos las copiamos a nuestra maquina para poder enumerarlas. Como la máquina no tiene ni curl, ni wget ni python podemos intentar copiarlas mediante bussybox: 
+Una vez dentro como user vemos que en el home tenemos un archivo de keepass y unas cuantas imágenes, nos las copiamos a nuestra maquina para poder enumerarlas. Como la máquina no tiene ni curl, ni wget ni python podemos intentar copiarlas mediante bussybox: 
 >busybox httpd -f -p 8000
  
 o directamente con cat.
@@ -263,7 +263,7 @@ o directamente con cat.
 En nuestro equipo nos ponemos en escucha por netcat y metemos la salida al archivo MyPasswords.kdbx. También podemos usar scp para pasar los archivos.  
 Una vez en nuestro equipo las abrimos con keepassxc, nos pide una password y una keyfile.  
 Con keepass2john sacamos los hashes de Mypassword.kdbx y luego los pasamos por john the ripper, pero no tenemos suerte.  
-Volvemos a pasar el keepass2john pero esta vez a las imagenes.
+Volvemos a pasar el keepass2john pero esta vez a las imágenes.
 >keepass2john -k imagenes MyPassword.kdbx  
 
 Con esto nos dará los hashes que luego intentaremos romper con johntheripper.
