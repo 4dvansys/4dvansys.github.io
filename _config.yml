@@ -1,5 +1,5 @@
 title: Write up Hack the Box
-description: > # this means to ignore newlines until "baseurl:"
+description: Write ups de maáquinas de hack the box # this means to ignore newlines until "baseurl:"
   
 permalink: ':title/'
 baseurl: "" # the subpath of your site, e.g. /blog
@@ -9,7 +9,7 @@ site-twitter: #if your site has a twitter account, enter it here
 # Author Settings
 author: Advansys # add your name
 author-img: misterX.png # add your photo
-about-author: Hola, soy Advansys un entusiasta de la ciberseguridad y el hacking # add description
+about-author: Hola, soy Advansys un entusiasta de la ciberseguridad y el hacking, escribo estos write ups para practicar y compartir conocimiento en español. # add description
 social-twitter: # add your Twitter handle
 social-facebook: # add your Facebook handle
 social-github:  # add your Github handle
