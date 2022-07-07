@@ -8,7 +8,6 @@ url: "http://4dvansys.github.io" # the base hostname & protocol for your site, e
 =======
 baseurl:  # the subpath of your site, e.g. /blog
 url:  "https://4dvansys.github.io" # the base hostname & protocol for your site, e.g. http://example.com
->>>>>>> bd8fe7c2a023a6631075fd89a2b3ffa3f4fe9d6c
 site-twitter: #if your site has a twitter account, enter it here
 
 # Author Settings
