@@ -1,4 +1,4 @@
-I"�9<p>Este es un writeup de la maquina de Hack the Box safe, clasificada
+I"�9<p>Este es un writeup de la maquina de Hack the Box safe, clasificada
   como fácil, en la que tocaremos básicamente técnicas de análisis de
   binarios, desarrollo de buffer overflow y creación de exploits en
   python.</p>
@@ -125,7 +125,7 @@ aplicación que nos devuelve date y un eco de lo que nosotros escribamos.</p>
 <p>Una vez descargada la aplicación vamos a analizarla, para ello usaremos
 Ghidra, una herramienta de ingeniería inversa de código abierto y
 gratuita desarrollada por la NSA. Cargamos la aplicación en Ghidra y
-analizamos las funciones, en la función main podemos ver el código hecho
+analizamos las funciones, en la funcion main podemos ver el código hecho
 en C. Vemos que crea un buffer y usa gets y puts para el input de
 usuario. No tiene sanitización y posiblemente sea vulnerable a buffer
 overflow.</p>
@@ -185,7 +185,7 @@ Buscando en ghidra encontramos que la función test tiene MOV RDI,RSP, después 
 
 <p><img src="/assets/img/Safe/screensht_22-06-09_20_30_18.png" alt="Búsqueda de pop r13" /></p>
 
-<p>Necesitamos la dirección de system para hacer la llamada a la cadena que vamos a guardar en rdi, la podemos conseguir haciendo un objectdump a myapp de la siguiente manera:</p>
+<p>Necesitamos la dirección de system para hacer la llamada a la cadena que vamos a guardar en rdi, la podemos conseguir haciendo un objectdump a myapp de la siguente manera:</p>
 <blockquote>
   <table>
     <tbody>
@@ -312,7 +312,7 @@ null = p64(0x0)</p>
 
 <p>#Escalada de privilegios</p>
 
-<p>Una vez dentro como user vemos que en el home tenemos un archivo de keepass y unas cuantas imágenes, nos las copiamos a nuestra maquina para poder enumerarlas. Como la máquina no tiene ni curl, ni wget ni python podemos intentar copiarlas mediante bussybox:</p>
+<p>Una vez dentro como user vemos que en el home tenemos un archivo de keepass y unas cuantas imagenes, nos las copiamos a nuestra maquina para poder enumerarlas. Como la máquina no tiene ni curl, ni wget ni python podemos intentar copiarlas mediante bussybox:</p>
 <blockquote>
   <p>busybox httpd -f -p 8000</p>
 </blockquote>
@@ -325,7 +325,7 @@ null = p64(0x0)</p>
 <p>En nuestro equipo nos ponemos en escucha por netcat y metemos la salida al archivo MyPasswords.kdbx. También podemos usar scp para pasar los archivos.<br />
 Una vez en nuestro equipo las abrimos con keepassxc, nos pide una password y una keyfile.<br />
 Con keepass2john sacamos los hashes de Mypassword.kdbx y luego los pasamos por john the ripper, pero no tenemos suerte.<br />
-Volvemos a pasar el keepass2john pero esta vez a las imágenes.</p>
+Volvemos a pasar el keepass2john pero esta vez a las imagenes.</p>
 <blockquote>
   <p>keepass2john -k imagenes MyPassword.kdbx</p>
 </blockquote>
