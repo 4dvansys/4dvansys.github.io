@@ -1,4 +1,4 @@
-I"2<p>Hoy tocaremos una máquina muy fácil de iniciación, una máquina con la que vamos a practicar un rce a tomcat</p>
+I":<p>Hoy tocaremos una máquina muy fácil de iniciación, una máquina con la que vamos a practicar un rce a tomcat</p>
 
 <hr />
 <h1 id="enumeración">Enumeración</h1>
@@ -57,6 +57,5 @@ Host is up (0.051s latency).</p>
 
 <p><img src="/assets/img/Jerry/2022-07-08_195224.png" alt="inicial" /></p>
 
-<p>Una máquina muy, muy sencilla de iniciación que está muy bien para conocer las reverse shell, nos vemos en otra.</p>
-
+<p>Una máquina muy, muy sencilla de iniciación que está muy bien para conocer las reverse shell, nos vemos en otra máquina.</p>
 :ET

