@@ -1,0 +1,162 @@
+I"<p>Hola, hoy vamos a tocar una máquina Windows de dificultad Medium en Hack the Box, explotáremos básicamente Active Directory y deserialización.</p>
+
+<hr />
+<h1 id="enumeración">Enumeración</h1>
+
+<p>Como siempre usaremos nmap y descubrimos los siguientes puertos:</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_164755.png" alt="Nmap" /></p>
+
+<p>Hacemos una enumeración con mas profundidad con nmap y vemos un dominio y un nombre de dc. Scrm.local y DC1.scrm.local. Los metemos en el etc/hosts.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_171633.png" alt="Nmap" /></p>
+
+<p>Echamos un vistazo a la pagina web y no dice que tiene el NTLM desabilidado por problemas de seguridad, tambien podemos ver un leak de nombre de usuario ksimpson</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-04_191008.png" alt="Leak" /></p>
+
+<p>Seguimos mirando y vemos que existe una opcion de debuging para envio de problemas.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-04_190924.png" alt="Debug" /></p>
+
+<p>Vemos que se envía al dc1.scrm.local por el puerto 4411.</p>
+
+<hr />
+<h1 id="user-enum-y-kerberoasting">User Enum y Kerberoasting</h1>
+
+<p>Vamos a intentar enumerar mas usuarios con userenum de kerbrute</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_163728.png" alt="Userenum" /></p>
+
+<p>Nos aparecen unos cuantos nombres y entre ellos ksimpson, vamos a intentar hacer un password spraying para intentar adivinar la contraseña, antes de lanzar rockyou o algún diccionario de contraseñas vamso a usar los mismos nombres de usuario como contraseña, si no probaríamos con cewl.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_163827.png" alt="spraying" /></p>
+
+<p>Y bingo! como no podia ser de otra manera ksimpson esta usando como contraseña su propio nombre.</p>
+
+<p>Probamos crackmapexec smb y winrm con ksimpson pero no nos da nada. Vamos a intentar conseguir un TGT (Ticket Granting Ticket). Informacion sobre TGT <a href="https://doubleoctopus.com/security-wiki/authentication/ticket-granting-tickets/">aquí</a></p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_164859.png" alt="TGT" /></p>
+
+<p>Nos genera un ticket y lo guarda en ksimpson.ccache</p>
+
+<p>Metemos el ticket en KRB5CCNAME</p>
+
+<blockquote>
+  <p>export KRB5CCNAME=ksimpson.ccache</p>
+</blockquote>
+
+<p>Y lanzamos un kerberoasting attack:</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_171547.png" alt="Kerberoasting" /></p>
+
+<p>Info sobre <a href="https://medium.com/r3d-buck3t/attacking-service-accounts-with-kerberoasting-with-spns-de9894ca243f">Kerberos</a></p>
+
+<p>Esto nos reporta el hash del usuario sqlsvc, usamos john para intentar romperlo y podemos ver la contraseña.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_171814.png" alt="john" /></p>
+
+<p>Con Impacket-getPac vamos a enumerar el SID.</p>
+
+<blockquote>
+  <p>impacket-getPac -targetUser ksimpson scrm.local/ksimpson:ksimpson</p>
+</blockquote>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_172548.png" alt="SID" /></p>
+
+<p>Con <a href="https://codebeautify.org/ntlm-hash-generator">CodeBeauty</a> codificamos la contraseña de sqlsvc y generamos un silver ticket.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_172835.png" alt="sql" /></p>
+
+<blockquote>
+  <p>export KRB5CCNAME=Administrator.ccache</p>
+</blockquote>
+
+<p>Y nos conectamos a sql con imapcket-mssqlclient</p>
+
+<blockquote>
+  <p>impacket-mssqlclient dc1.scrm.local -k -no-pass</p>
+</blockquote>
+
+<p>Estamos dentro de SQL, ahora vamos a enumerar las bases de datos.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_173034.png" alt="sql2" /></p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_173119.png" alt="sql3" /></p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_173302.png" alt="sql4" /></p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_173438.png" alt="sql5" /></p>
+
+<p>Ya tenemos otro usuario y contraseña aunque de momento no podemos hacer gran cosa. Vamos a intentar una ejecución remota de comandos para intentar colar una reverse shell.</p>
+
+<p>Activamos el xp_cmdshell.</p>
+
+<blockquote>
+  <p>enable_xp_cmdshell</p>
+</blockquote>
+
+<p>Por otro lado descargamos netcat.exe para windows y creamos un servidor http para poder descargarlo.</p>
+
+<blockquote>
+  <p>python3 -m http.server 80</p>
+</blockquote>
+
+<p>Usamos curl para poder descargar netcat de nuestro equipo</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_174353.png" alt="ncsql" /></p>
+
+<p>Por otro lado, nos ponemos en escucha con netcat</p>
+
+<blockquote>
+  <p>rlwrap nc -lnvp 443</p>
+</blockquote>
+
+<p>Y lanzamos la Shell:</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_174158.png" alt="ncsql" /></p>
+
+<p>Ya estamos dentro como el usuario sqlsvc</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_174442.png" alt="ncsql" /></p>
+
+<p>Con este usuario no podemos hacer gran cosa, pero tenemos la contraseña del usuario miscsvc, vamos a pivotar.</p>
+
+<p>Nos ponemos en escucha con netcat y ejecutamos:</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_175430.png" alt="misc" /></p>
+
+<hr />
+<h1 id="deserialización">Deserialización</h1>
+
+<p>Ya estamos comp el usuario miscsvc, después de buscar por el equipo, vemos unos archivos en c:\Shares\IT\Apps\Sales Order Client. ScrambleClient.exe y ScrambleLib.dll. Vamos a traerlos a nuestra maquina para observarlos mas de cerca, para ello podemos usar <a href="https://github.com/besimorhino/powercat">powercat</a></p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_191507.png" alt="Powercat" /></p>
+
+<p>Parece que es el binario que vimos en la web. Usamos el comando file y nos dice que es un binario .NET. Vamos a desensamblarlo e intentar ver el codigo fuente, esto lo podemos hacer pasando los binarios a un windows y usar <a href="https://github.com/dnSpy/dnSpy">dnSpy</a> o <a href="https://www.jetbrains.com/es-es/decompiler/">DotPeek</a> etc…</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-06_160627.png" alt="uploadorder" /></p>
+
+<p>En el codigo fuente podemos ver una función que se llama UploadOrder que probablemente sea vulnerable a deserialización. En la maquina virtual de Windows descargamos el <a href="https://github.com/pwntester/ysoserial.net">Ysoserial</a> y creamos una reverse shell serializada para windows.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-06_160649.png" alt="ysoserial" /></p>
+
+<p>la pasamos a nuestro equipo con linux y lanzamos un netcat a la máquina Scrambled.</p>
+
+<blockquote>
+  <p>netcat 10.10.11.168 4411</p>
+</blockquote>
+
+<p>La maquina nos responde con un input. Escribimos UPLOAD_ORDER; y nuestra shell serializada. por otro lado debemos estar en escucha con netcat para que nos llegue la shell.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_200542.png" alt="ysoserial" /></p>
+
+<p>Y bingo ya tenemos shell como Nt Authority System. Ahora solo queda copiar la root flag.</p>
+
+<p><img src="/assets/img/Scrambled/2022-10-03_200605.png" alt="root" /></p>
+
+<p>Espero que os haya gustado.</p>
+
+<hr />
+
+:ET
